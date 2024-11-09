@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col justify-end gap-6 p-16">
+    <div className="h-[100svh] flex flex-col justify-end gap-6 p-16">
       <div className="absolute top-0 left-0 right-0 bottom-0 flex justify-center items-center">
         <Image
           src="/logo.svg"
