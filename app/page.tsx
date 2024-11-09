@@ -11,7 +11,7 @@ export default function Home() {
           height={225}
         />
       </div>
-      <div className="flex flex-col gap-2 z-10">
+      <div className="flex flex-col gap-2 z-10 text-white">
         <div className="text-right text-sm">
           Bringing projects to life through code / physical media
         </div>

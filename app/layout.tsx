@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={lacquer.className}>
+      <body className={`${lacquer.className} bg-[#7F29C1]`}>
         {children}
       </body>
     </html>
