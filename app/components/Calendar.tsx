@@ -154,7 +154,7 @@ export function Calendar({ checkins, selectedDate, onDateSelect, onNavigate }: C
           <Arrow direction="left" />
         </button>
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-lg lg:text-xl font-semibold">
             {format(currentMonth, 'MMMM yyyy')}
           </h2>
           <div className="flex">
