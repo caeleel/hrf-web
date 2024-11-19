@@ -171,8 +171,8 @@ export function Calendar({ checkins, selectedDate, onDateSelect, onNavigate }: C
         </button>
       </div>
       <div className="grid grid-cols-7 gap-2">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center font-semibold text-sm pb-2">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+          <div key={i} className="text-center font-semibold text-sm pb-2">
             {day}
           </div>
         ))}
@@ -188,7 +188,7 @@ export function Calendar({ checkins, selectedDate, onDateSelect, onNavigate }: C
               onClick={() => !isDisabled && onDateSelect(day)}
               disabled={isDisabled}
               className={`
-                relative h-16 p-1 rounded-lg transition-colors flex items-center justify-center
+                relative h-12 lg:h-16 p-1 rounded-lg transition-colors flex items-center justify-center
                 ${isSelected ? 'bg-gray-100 dark:bg-gray-800' : ''}
                 ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800'}
                 ${!isCurrent && 'opacity-30'}

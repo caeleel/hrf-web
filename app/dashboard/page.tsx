@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar } from '../components/Calendar';
 import { ChangePasswordModal } from '../components/ChangePasswordModal';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface RawCheckIn {
   check_in_date: string;
@@ -19,6 +20,35 @@ interface CheckInMap {
   [date: string]: DailyCheckIns;
 }
 
+function HamburgerIcon({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+    >
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    </button>
+  );
+}
+
+function CloseIcon({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+    >
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    </button>
+  );
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const [checkins, setCheckins] = useState<CheckInMap>({});
@@ -28,6 +58,7 @@ export default function Dashboard() {
   const [error, setError] = useState('');
   const [currentView, setCurrentView] = useState('calendar');
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [isNavOpen, setIsNavOpen] = useState(false);
 
   useEffect(() => {
     // Check if user is logged in
@@ -141,44 +172,101 @@ export default function Dashboard() {
     router.push('/');
   };
 
+  // Close nav when screen size changes to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) { // lg breakpoint
+        setIsNavOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const Navigation = () => (
+    <div className="flex-grow">
+      <ul className="space-y-2">
+        <li>
+          <button
+            onClick={() => {
+              setCurrentView('calendar');
+              setIsNavOpen(false);
+            }}
+            className={`w-full text-left px-4 py-2 rounded-lg transition-colors font-semibold
+              ${currentView === 'calendar'
+                ? 'bg-gray-200 text-gray-900'
+                : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+              }`}
+          >
+            Calendar
+          </button>
+        </li>
+      </ul>
+    </div>
+  );
+
+  const NavigationFooter = () => (
+    <div className="space-y-2">
+      <button
+        onClick={() => {
+          setShowChangePassword(true);
+          setIsNavOpen(false);
+        }}
+        className="w-full px-4 py-2 text-left text-gray-500 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors"
+      >
+        Change Password
+      </button>
+      <button
+        onClick={handleLogout}
+        className="w-full px-4 py-2 text-left text-gray-500 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors"
+      >
+        Logout
+      </button>
+    </div>
+  );
+
   return (
     <div className="flex min-h-screen h-screen overflow-hidden">
-      {/* Left Navigation - Static */}
-      <nav className="w-64 bg-gray-100 border-r border-gray-200 p-6 flex flex-col h-full">
-        <div className="flex-grow">
-          <ul className="space-y-2">
-            <li>
-              <button
-                onClick={() => setCurrentView('calendar')}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-colors font-semibold
-                  ${currentView === 'calendar'
-                    ? 'bg-gray-200 text-gray-900'
-                    : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
-                  }`}
-              >
-                Calendar
-              </button>
-            </li>
-          </ul>
-        </div>
-        <div className="space-y-2">
-          <button
-            onClick={() => setShowChangePassword(true)}
-            className="w-full px-4 py-2 text-left text-gray-500 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors"
-          >
-            Change Password
-          </button>
-          <button
-            onClick={handleLogout}
-            className="w-full px-4 py-2 text-left text-gray-500 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors"
-          >
-            Logout
-          </button>
-        </div>
+      {/* Desktop Navigation */}
+      <nav className="hidden lg:flex w-64 bg-gray-100 border-r border-gray-200 p-6 flex-col h-full">
+        <Navigation />
+        <NavigationFooter />
       </nav>
 
-      {/* Main Content - Scrollable */}
+      {/* Mobile Navigation Overlay */}
+      <AnimatePresence>
+        {isNavOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsNavOpen(false)}
+              className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+            />
+            <motion.nav
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'tween', duration: 0.3 }}
+              className="lg:hidden fixed inset-y-0 left-0 w-64 bg-gray-100 p-6 flex flex-col z-50"
+            >
+              <div className="flex justify-end mb-6">
+                <CloseIcon onClick={() => setIsNavOpen(false)} />
+              </div>
+              <Navigation />
+              <NavigationFooter />
+            </motion.nav>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content */}
       <main className="flex-grow overflow-y-auto">
+        <div className="lg:hidden p-4 border-b absolute top-0 left-0 right-0">
+          <HamburgerIcon onClick={() => setIsNavOpen(true)} />
+        </div>
         <div className="h-full w-full flex items-center justify-center">
           <div className="w-full max-w-3xl px-8">
             <Calendar

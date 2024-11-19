@@ -94,7 +94,7 @@ export function Profile({
                 }
               }}
               placeholder="Password"
-              className="w-32 px-2 pt-2 pb-1 placeholder-[rgba(255,255,255,0.5)] border-2 border-primary bg-primary text-base text-white focus:outline-none rounded-bl-xl"
+              className="w-[92px] px-2 pt-2 pb-1 placeholder-[rgba(255,255,255,0.5)] border-2 border-primary bg-primary text-base text-white focus:outline-none rounded-bl-xl"
             />
             <button
               onClick={(e) => {

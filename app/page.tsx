@@ -64,7 +64,7 @@ export default function Home() {
                 className={`${bebasNeue.className} flex gap-12 absolute top-[4rem]`}
               >
                 {USERS.map(name => (
-                  <div className="w-[10rem] h-[10rem]" key={name}>
+                  <div className="w-32 h-[10rem]" key={name}>
                     <Profile
                       name={name}
                       isSelected={selectedUser === name}
