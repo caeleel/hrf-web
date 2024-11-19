@@ -19,3 +19,11 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.clip-diagonal {
+  clip-path: polygon(0 0, 0% 100%, 100% 0);
+}
+
+.clip-diagonal-inverse {
+  clip-path: polygon(100% 100%, 0% 100%, 100% 0);
+}
