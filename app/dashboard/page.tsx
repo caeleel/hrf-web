@@ -264,7 +264,7 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="flex-grow overflow-y-auto">
-        <div className="lg:hidden p-4 border-b absolute top-0 left-0 right-0">
+        <div className="lg:hidden p-2 absolute top-0 left-0 right-0">
           <HamburgerIcon onClick={() => setIsNavOpen(true)} />
         </div>
         <div className="h-full w-full flex items-center justify-center">
