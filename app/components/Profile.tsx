@@ -37,7 +37,7 @@ export function Profile({
     try {
       setIsLoading(true);
       setError('');
-      
+
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
@@ -75,7 +75,7 @@ export function Profile({
       onClick={!isSelected ? onSelect : undefined}
       className={`cursor-pointer text-center ${!isSelected && 'transition-transform hover:scale-105'} w-32`}
     >
-      <div className="w-32 h-32 rounded-tl-xl rounded-br-xl border-2 border-primary text-primary flex items-center justify-center text-4xl transition-all">
+      <div className="w-32 h-32 pt-2 rounded-tl-xl rounded-br-xl border-2 border-primary text-primary flex items-center justify-center text-[64px]">
         {name[0]}
       </div>
       {!isSelected ? (
@@ -96,7 +96,7 @@ export function Profile({
               placeholder="Password"
               className="w-32 px-2 pt-2 pb-1 placeholder-[rgba(255,255,255,0.5)] border-2 border-primary bg-primary text-base text-white focus:outline-none rounded-bl-xl"
             />
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleLogin();
@@ -104,7 +104,7 @@ export function Profile({
               className="text-primary relative right-0.5 border-2 border-primary p-[7px] bg-primary hover:bg-white group rounded-r-xl"
             >
               <svg width="20" height="22" viewBox="0 0 20 22" xmlns="http://www.w3.org/2000/svg">
-                <path className="fill-white group-hover:fill-primary" d="M9.38776 5.92308H0V11V16.0769H9.38776V22L20 11L9.38776 0V5.92308Z"/>
+                <path className="fill-white group-hover:fill-primary" d="M9.38776 5.92308H0V11V16.0769H9.38776V22L20 11L9.38776 0V5.92308Z" />
               </svg>
             </button>
           </div>
