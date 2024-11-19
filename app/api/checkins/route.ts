@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    if ((error as any).code === '23505') { // Unique violation
+    if ((error as { code: string }).code === '23505') { // Unique violation
       return NextResponse.json({ error: 'Already checked in for this date' }, { status: 400 });
     }
     console.error('Error creating check-in:', error);

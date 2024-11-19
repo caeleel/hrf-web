@@ -61,7 +61,7 @@ export function Profile({
       }
     } catch (err) {
       setError('An error occurred');
-      setPassword('');
+      console.error(err);
       setIsLoading(false);
     }
   };
