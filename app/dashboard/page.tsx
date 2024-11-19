@@ -227,7 +227,7 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="flex min-h-screen h-screen overflow-hidden">
+    <div className="flex h-[100svh] overflow-hidden">
       {/* Desktop Navigation */}
       <nav className="hidden lg:flex w-64 bg-gray-100 border-r border-gray-200 p-6 flex-col h-full">
         <Navigation />
