@@ -58,8 +58,12 @@ export function Calendar({ checkins, selectedDate, onDateSelect, onNavigate }: C
   const calendarEnd = endOfWeek(monthEnd);
 
   // Calculate check-in counts once
-  const changCount = Object.values(checkins).filter(day => day.chang).length;
-  const karlCount = Object.values(checkins).filter(day => day.karl).length;
+  const changCount = Object.entries(checkins)
+    .filter(([date, day]) => startOfMonth(new Date(date)).getTime() === startOfMonth(currentMonth).getTime() && day.chang)
+    .length;
+  const karlCount = Object.entries(checkins)
+    .filter(([date, day]) => startOfMonth(new Date(date)).getTime() === startOfMonth(currentMonth).getTime() && day.karl)
+    .length;
 
   // Generate all days that should appear in the calendar
   const days = eachDayOfInterval({
@@ -106,6 +110,8 @@ export function Calendar({ checkins, selectedDate, onDateSelect, onNavigate }: C
     };
   };
 
+  const nextMonthDisabled = isAfter(startOfMonth(addMonths(currentMonth, 1)), new Date());
+
   return (
     <div className="w-full max-w-3xl mx-auto">
       <div className="flex items-center justify-center gap-4 mb-8">
@@ -126,8 +132,8 @@ export function Calendar({ checkins, selectedDate, onDateSelect, onNavigate }: C
         </div>
         <button
           onClick={() => handleMonthChange('next')}
-          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-          disabled={isAfter(startOfMonth(addMonths(currentMonth, 1)), new Date())}
+          className={`p-1 rounded-lg transition-colors ${!nextMonthDisabled ? 'hover:bg-gray-100 dark:hover:bg-gray-800' : 'opacity-25'}`}
+          disabled={nextMonthDisabled}
         >
           <Arrow />
         </button>

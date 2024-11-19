@@ -12,14 +12,14 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
     const month = parseInt(searchParams.get('month') || (new Date().getMonth() + 1).toString());
+    const center = `${year}/${month}/15`;
 
     // Get all check-ins for the specified month
     const result = await sql`
       SELECT c.check_in_date, u.username
       FROM check_ins c
       JOIN users u ON u.id = c.user_id
-      WHERE EXTRACT(YEAR FROM c.check_in_date) = ${year}
-      AND EXTRACT(MONTH FROM c.check_in_date) = ${month}
+      WHERE c.check_in_date - ${center} BETWEEN -46 AND 46
       ORDER BY c.check_in_date
     `;
 
