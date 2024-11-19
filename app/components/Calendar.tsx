@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isAfter, startOfWeek, endOfWeek } from 'date-fns';
 import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface DailyCheckIns {
   karl: boolean;
@@ -42,6 +43,37 @@ function CheckInCount({ count, color }: { count: number, color: 'red' | 'purple'
     `}>
       {count}
     </div>
+  );
+}
+
+function CheckInIndicator({ karlCheckedIn, changCheckedIn }: { karlCheckedIn: boolean, changCheckedIn: boolean }) {
+  return (
+    <AnimatePresence>
+      {(karlCheckedIn || changCheckedIn) && (
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          exit={{ scale: 0 }}
+          transition={{
+            type: "spring",
+            stiffness: 400,
+            damping: 20
+          }}
+          className="absolute top-1 right-1 w-3 h-3"
+        >
+          {karlCheckedIn && changCheckedIn ? (
+            <div className="w-full h-full rounded-full overflow-hidden">
+              <div className="w-full h-full relative">
+                <div className="absolute top-0 left-0 w-full h-full bg-purple-500 clip-diagonal"></div>
+                <div className="absolute top-0 left-0 w-full h-full bg-red-500 clip-diagonal-inverse"></div>
+              </div>
+            </div>
+          ) : (
+            <div className={`w-full h-full rounded-full ${karlCheckedIn ? 'bg-purple-500' : 'bg-red-500'}`}></div>
+          )}
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -163,20 +195,10 @@ export function Calendar({ checkins, selectedDate, onDateSelect, onNavigate }: C
               `}
             >
               <div className="text-sm">{format(day, 'd')}</div>
-              {(karlCheckedIn || changCheckedIn) && (
-                <div className="absolute top-1 right-1 w-3 h-3">
-                  {karlCheckedIn && changCheckedIn ? (
-                    <div className="w-full h-full rounded-full overflow-hidden">
-                      <div className="w-full h-full relative">
-                        <div className="absolute top-0 left-0 w-full h-full bg-purple-500 clip-diagonal"></div>
-                        <div className="absolute top-0 left-0 w-full h-full bg-red-500 clip-diagonal-inverse"></div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={`w-full h-full rounded-full ${karlCheckedIn ? 'bg-purple-500' : 'bg-red-500'}`}></div>
-                  )}
-                </div>
-              )}
+              <CheckInIndicator
+                karlCheckedIn={karlCheckedIn}
+                changCheckedIn={changCheckedIn}
+              />
             </button>
           );
         })}

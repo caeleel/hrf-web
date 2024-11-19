@@ -199,7 +199,7 @@ export default function Dashboard() {
                     ? 'bg-gray-700 hover:bg-gray-600'
                     : 'bg-gray-900 hover:bg-gray-800'
                   }
-                  text-white font-medium transition-colors
+                  text-white font-medium transition-all duration-300
                 `}
               >
                 {isFetching ? 'Please wait...' : (
