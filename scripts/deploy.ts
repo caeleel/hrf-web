@@ -33,7 +33,7 @@ class Deployer {
 
     // Build the project
     console.log('Building project...');
-    await execAsync('npm run build');
+    await this.spawnAndWait('npm', ['run', 'build']);
 
     // Kill existing process if it exists
     if (this.currentProcess) {
@@ -67,6 +67,27 @@ class Deployer {
 
       this.setupProcessHandlers();
     }
+  }
+
+  private spawnAndWait(command: string, args: string[]): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const process = spawn(command, args, {
+        stdio: 'inherit',
+        shell: true
+      });
+
+      process.on('error', (error) => {
+        reject(error);
+      });
+
+      process.on('exit', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`Process exited with code ${code}`));
+        }
+      });
+    });
   }
 
   private setupProcessHandlers() {
