@@ -7,7 +7,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "deploy": "node --loader ts-node/esm scripts/deploy.ts"
   },
   "dependencies": {
     "@types/bcrypt": "^5.0.2",
