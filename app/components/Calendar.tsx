@@ -107,7 +107,7 @@ export function Calendar({ checkins, selectedDate, onDateSelect, onNavigate }: C
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth() + 1;
     onNavigate(year, month);
-  }, [currentMonth, onNavigate]);
+  }, [currentMonth]);
 
   const handleMonthChange = (direction: 'previous' | 'next') => {
     const newMonth = direction === 'previous'
