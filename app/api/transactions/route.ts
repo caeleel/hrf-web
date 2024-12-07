@@ -1,14 +1,15 @@
 import { sql } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/app/utils/auth';
-import { getAccountTransactions } from '@/app/utils/mercury';
+import { getAccountTransactions, MercuryTransaction } from '@/app/utils/mercury';
+import { MarkedTransaction } from '@/app/components/TransactionList';
 
-if (!process.env.MERCURY_INCOME_ACCOUNT || !process.env.MERCURY_EXPENSE_ACCOUNT) {
+if (!process.env.MERCURY_INCOME_ACCOUNT || !process.env.MERCURY_EXPENSE_ACCOUNTS) {
   throw new Error('Mercury accounts not configured');
 }
 
 const INCOME_ACCOUNT = process.env.MERCURY_INCOME_ACCOUNT;
-const EXPENSE_ACCOUNT = process.env.MERCURY_EXPENSE_ACCOUNT;
+const EXPENSE_ACCOUNTS = process.env.MERCURY_EXPENSE_ACCOUNTS;
 
 export async function GET(request: Request) {
   try {
@@ -20,37 +21,36 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const accountType = searchParams.get('account');
 
+    const expenseAccounts = EXPENSE_ACCOUNTS.split(',');
+
     // Get Mercury transactions
-    const mercuryTransactions = [];
+    let mercuryTransactions: MercuryTransaction[] = [];
     if (accountType === 'income' || !accountType) {
       const incomeTransactions = await getAccountTransactions(INCOME_ACCOUNT, user);
-      mercuryTransactions.push(...incomeTransactions);
+      mercuryTransactions.push(...(incomeTransactions.map((t) => ({ ...t, accountId: INCOME_ACCOUNT }))));
     }
     if (accountType === 'expense' || !accountType) {
-      const expenseTransactions = await getAccountTransactions(EXPENSE_ACCOUNT, user);
-      mercuryTransactions.push(...expenseTransactions);
+      for (const account of expenseAccounts) {
+        const expenseTransactions = await getAccountTransactions(account, user);
+        mercuryTransactions.push(...(expenseTransactions.map((t) => ({ ...t, accountId: account }))));
+      }
     }
-
     // Get marked transactions from database
     let accountFilter = '';
     if (accountType === 'income') {
       accountFilter = `WHERE mt.account_number = '${INCOME_ACCOUNT}'`;
     } else if (accountType === 'expense') {
-      accountFilter = `WHERE mt.account_number = '${EXPENSE_ACCOUNT}'`;
+      accountFilter = `WHERE mt.account_number = '${expenseAccounts[0]}' OR mt.account_number = '${expenseAccounts[1]}'`;
     }
 
     const query = `
       SELECT 
         mt.*,
         u.username as credited_username,
-        CASE 
-          WHEN mt.account_number = '${EXPENSE_ACCOUNT}' OR mt.counterparty_id = '${EXPENSE_ACCOUNT}' THEN 'expense'
-          WHEN mt.account_number = '${INCOME_ACCOUNT}' OR mt.counterparty_id = '${INCOME_ACCOUNT}' THEN 'income'
-          ELSE 'internal'
-        END as transaction_type,
+        mt.type as transaction_type,
         CASE
-          WHEN mt.account_number = '${EXPENSE_ACCOUNT}' OR mt.account_number = '${INCOME_ACCOUNT}' THEN false
-          ELSE true
+          WHEN mt.account_number = '${expenseAccounts[0]}' AND mt.account_number = '${INCOME_ACCOUNT}' THEN true
+          ELSE false
         END as is_internal
       FROM marked_transactions mt
       LEFT JOIN users u ON mt.credited_user_id = u.id
@@ -65,13 +65,15 @@ export async function GET(request: Request) {
       acc[mt.transaction_id] = mt;
       return acc;
     }, {});
+    mercuryTransactions = mercuryTransactions.filter(mt => mt.counterpartyId !== INCOME_ACCOUNT && mt.status !== 'failed');
 
     // Combine Mercury transactions with marked data
-    const combinedTransactions = mercuryTransactions.map(mt => {
+    const combinedTransactions: MarkedTransaction[] = mercuryTransactions.map(mt => {
       const markedData = markedTransactionsMap[mt.id] || {
         credited_user_id: null,
         credited_username: null,
-        type: 'unassigned'
+        type: 'unassigned',
+        transaction_type: mt.accountId === INCOME_ACCOUNT && mt.counterpartyId === expenseAccounts[0] ? 'internal' : (mt.amount < 0 ? 'expense' : 'income')
       };
 
       return {
@@ -79,14 +81,14 @@ export async function GET(request: Request) {
         counterparty_name: mt.counterpartyName,
         counterparty_id: mt.counterpartyId,
         amount: mt.amount,
+        account_id: mt.accountId,
         posted_at: mt.postedAt,
-        transaction_type: mt.counterpartyId === EXPENSE_ACCOUNT || mt.counterpartyId === INCOME_ACCOUNT
-          ? 'internal'
-          : (mt.counterpartyId === EXPENSE_ACCOUNT ? 'expense' : 'income'),
-        is_internal: mt.counterpartyId === EXPENSE_ACCOUNT || mt.counterpartyId === INCOME_ACCOUNT,
+        is_debit: mt.amount < 0,
+        transaction_type: markedData.transaction_type,
+        is_internal: mt.counterpartyId === expenseAccounts[0] && mt.accountId === INCOME_ACCOUNT,
         credited_user_id: markedData.credited_user_id,
         credited_username: markedData.credited_username,
-        type: markedData.type,
+        type: markedData.type || markedData.transaction_type,
       };
     });
 
@@ -112,11 +114,12 @@ export async function POST(request: Request) {
     const {
       transactionId,
       creditedUserId,
+      accountId,
       type
     } = await request.json();
 
     // Get transaction details from Mercury
-    const transactions = await getAccountTransactions(INCOME_ACCOUNT, user);
+    const transactions = await getAccountTransactions(accountId, user);
     const transaction = transactions.find(t => t.id === transactionId);
 
     if (!transaction) {
@@ -136,7 +139,7 @@ export async function POST(request: Request) {
         counterparty_name,
         posted_at
       ) VALUES (
-        ${INCOME_ACCOUNT},
+        ${accountId},
         ${transaction.id},
         ${transaction.amount < 0},
         ${Math.abs(transaction.amount)},

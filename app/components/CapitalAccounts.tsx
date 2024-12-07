@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, format } from 'date-fns';
 import { LoadingSpinner } from './TransactionList';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type Granularity = 'monthly' | 'yearly' | 'all-time';
 
@@ -193,6 +194,8 @@ export function CapitalAccounts() {
   const [error, setError] = useState('');
   const [rawData, setRawData] = useState<{ checkIns: CheckIn[], transactions: Transaction[] } | null>(null);
   const [capitalAccounts, setCapitalAccounts] = useState<TimePeriodData[]>([]);
+  const [showExpenseNotification, setShowExpenseNotification] = useState(true);
+  const [unmarkedExpenses, setUnmarkedExpenses] = useState<number>(0);
 
   // Fetch data only once when component mounts
   useEffect(() => {
@@ -207,6 +210,54 @@ export function CapitalAccounts() {
       setCapitalAccounts(accounts);
     }
   }, [granularity, rawData]);
+
+  useEffect(() => {
+    const checkUnmarkedExpenses = async () => {
+      try {
+        const response = await fetch('/api/transactions?account=expense');
+        if (!response.ok) throw new Error('Failed to fetch transactions');
+        const data = await response.json();
+
+        const count = data.transactions.filter(
+          (t: { transaction_type: string, type: string }) =>
+            t.transaction_type === 'expense' && t.type === 'unassigned'
+        ).length;
+
+        setUnmarkedExpenses(count);
+      } catch (err) {
+        console.error('Error checking unmarked expenses:', err);
+      }
+    };
+
+    checkUnmarkedExpenses();
+  }, []);
+
+  const handleAutoMark = async () => {
+    try {
+      const response = await fetch('/api/transactions/auto-mark', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to auto-mark transactions');
+
+      // Refresh unmarked expenses count
+      const transactionsResponse = await fetch('/api/transactions?account=expense');
+      if (!transactionsResponse.ok) throw new Error('Failed to fetch transactions');
+      const data = await transactionsResponse.json();
+
+      const count = data.transactions.filter(
+        (t: { transaction_type: string, type: string }) =>
+          t.transaction_type === 'expense' && t.type === 'unassigned'
+      ).length;
+
+      setUnmarkedExpenses(count);
+    } catch (err) {
+      console.error('Error auto-marking expenses:', err);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -234,12 +285,12 @@ export function CapitalAccounts() {
   }
 
   return (
-    <div className="w-full sm:text-base text-xs">
-      <div className="flex justify-end mb-8 mr-4">
+    <div className="w-full sm:text-base text-xs relative min-h-full">
+      <div className="flex justify-end mb-4 mr-4">
         <div className="px-2 py-1 border">
           <select
             value={granularity}
-            className="outline-none"
+            className="outline-none bg-transparent"
             onChange={(e) => setGranularity(e.target.value as Granularity)}
           >
             <option value="monthly">Monthly</option>
@@ -249,7 +300,7 @@ export function CapitalAccounts() {
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-[140px,1fr,1fr,1fr] grid-cols-[100px,1fr,1fr,1fr] gap-2 py-2 px-6 border-b font-medium">
+      <div className="grid sm:grid-cols-[140px,1fr,1fr,1fr] grid-cols-[100px,1fr,1fr,1fr] gap-2 py-3 px-6 border-b font-semibold">
         <div>Time Period</div>
         <div>Category</div>
         <div className="text-right">Chang</div>
@@ -257,7 +308,7 @@ export function CapitalAccounts() {
       </div>
 
       {capitalAccounts.map((period, periodIndex) => (
-        <div key={periodIndex} className="border-b last:border-b-0">
+        <div key={periodIndex} className="border-b last:border-b-0 py-3">
           {period.categories.map((category, categoryIndex) => (
             <div
               key={`${periodIndex}-${categoryIndex}`}
@@ -281,6 +332,39 @@ export function CapitalAccounts() {
           ))}
         </div>
       ))}
+
+      <AnimatePresence>
+        {showExpenseNotification && unmarkedExpenses > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-lg"
+          >
+            <div className="max-w-3xl mx-auto flex items-center justify-between">
+              <div className="text-gray-700">
+                There are currently {unmarkedExpenses} expenses waiting to be marked
+              </div>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleAutoMark}
+                  className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  Auto-mark
+                </button>
+                <button
+                  onClick={() => setShowExpenseNotification(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 } 

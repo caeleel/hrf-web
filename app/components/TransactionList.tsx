@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface MarkedTransaction {
+export interface MarkedTransaction {
   id: string;
   counterparty_name: string;
   counterparty_id: string;
@@ -14,6 +14,7 @@ interface MarkedTransaction {
   type: string;
   transaction_type: 'income' | 'expense' | 'internal';
   is_internal: boolean;
+  account_id: string;
   posted_at: string;
 }
 
@@ -126,6 +127,9 @@ export function TransactionList() {
     transaction: MarkedTransaction;
     userId: number | null;
   } | null>(null);
+  const [showExpenseNotification, setShowExpenseNotification] = useState(true);
+  const [isAutoMarking, setIsAutoMarking] = useState(false);
+  const [autoMarkProgress, setAutoMarkProgress] = useState({ current: 0, total: 0 });
 
   useEffect(() => {
     fetchTransactions();
@@ -188,6 +192,7 @@ export function TransactionList() {
         body: JSON.stringify({
           transactionId: transaction.id,
           creditedUserId: userId,
+          accountId: transaction.account_id,
           type: transaction.transaction_type
         }),
       });
@@ -231,6 +236,29 @@ export function TransactionList() {
     setRememberMapModal(null);
   };
 
+  const getUnmarkedExpenses = () => {
+    console.log(transactions);
+    return transactions.filter(t =>
+      t.transaction_type === 'expense' && t.type === 'unassigned'
+    );
+  };
+
+  const handleAutoMark = async () => {
+    const unmarkedExpenses = getUnmarkedExpenses();
+    setIsAutoMarking(true);
+    setAutoMarkProgress({ current: 0, total: unmarkedExpenses.length });
+
+    try {
+      for (let i = 0; i < unmarkedExpenses.length; i++) {
+        await handleAssign(unmarkedExpenses[i], null, false);
+        setAutoMarkProgress(prev => ({ ...prev, current: i + 1 }));
+      }
+    } finally {
+      setIsAutoMarking(false);
+      setShowExpenseNotification(false);
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -241,11 +269,11 @@ export function TransactionList() {
 
   return (
     <div className="w-full">
-      <div className="flex justify-end mb-8 mr-4">
+      <div className="flex justify-end mb-1 mr-4">
         <div className="px-2 py-1 border">
           <select
             value={accountFilter}
-            className="outline-none"
+            className="outline-none bg-transparent"
             onChange={(e) => setAccountFilter(e.target.value as typeof accountFilter)}
           >
             <option value="all">All Accounts</option>
@@ -255,28 +283,97 @@ export function TransactionList() {
         </div>
       </div>
 
-      <div className="grid grid-cols-[minmax(240px,1fr),120px,80px] lg:grid-cols-[minmax(300px,1fr),120px,100px,80px] gap-2 p-6 border-b font-medium">
-        <div>From / To</div>
-        <div>Amount</div>
-        <div className="hidden lg:block">Type</div>
-        <div className="pl-1 text-right">Credit to</div>
-      </div>
-      {transactions.map(transaction => (
-        <div
-          key={transaction.id}
-          className="grid grid-cols-[minmax(240px,1fr),120px,80px] lg:grid-cols-[minmax(300px,1fr),120px,100px,80px] gap-2 p-6 hover:bg-gray-50 transition-colors"
-        >
-          <div className="truncate">{transaction.counterparty_name}</div>
-          <div className={`${transaction.is_debit ? 'text-red-500' : 'text-green-500'}`}>
-            ${Math.abs(transaction.amount).toFixed(2)}
-          </div>
-          <div className="capitalize hidden lg:block">{transaction.transaction_type}</div>
-          <AssignmentDropdown
-            transaction={transaction}
-            onAssign={(userId) => handleAssign(transaction, userId)}
-          />
+      <div className="sm:text-base text-xs">
+        <div className="hidden sm:grid sm:grid-cols-[minmax(240px,1fr),120px,80px] lg:grid-cols-[minmax(300px,1fr),120px,100px,80px] gap-2 p-6 border-b font-semibold">
+          <div>From / To</div>
+          <div>Amount</div>
+          <div className="hidden lg:block">Type</div>
+          <div className="pl-1 text-right">Credit to</div>
         </div>
-      ))}
+        <div className="sm:hidden flex items-center justify-between p-6 border-b font-semibold">
+          <div><div>From / To</div>
+            <div>Amount</div></div>
+          <div className="text-right">Credit to</div>
+        </div>
+        {transactions.map(transaction => (
+          <>
+            <div
+              key={transaction.id}
+              className="hidden sm:grid grid-cols-[minmax(240px,1fr),120px,80px] lg:grid-cols-[minmax(300px,1fr),120px,100px,80px] gap-2 p-6 hover:bg-gray-50 transition-colors"
+            >
+              <div className="truncate">{transaction.counterparty_name}</div>
+              <div className={`${transaction.is_debit ? 'text-red-500' : 'text-green-500'}`}>
+                ${Math.abs(transaction.amount).toFixed(2)}
+              </div>
+              <div className="capitalize hidden lg:block">{transaction.transaction_type}</div>
+              <AssignmentDropdown
+                transaction={transaction}
+                onAssign={(userId) => handleAssign(transaction, userId)}
+              />
+            </div>
+            <div
+              key={`${transaction.id}-mobile`}
+              className="sm:hidden flex items-center justify-between p-6"
+            >
+              <div>
+                <div className="truncate">{transaction.counterparty_name}</div>
+                <div className={`${transaction.is_debit ? 'text-red-500' : 'text-green-500'}`}>
+                  ${Math.abs(transaction.amount).toFixed(2)}
+                </div>
+              </div>
+              <AssignmentDropdown
+                transaction={transaction}
+                onAssign={(userId) => handleAssign(transaction, userId)}
+              />
+            </div>
+          </>
+        ))}
+      </div>
+      <div className="w-full h-32" />
+
+      <AnimatePresence>
+        {showExpenseNotification && getUnmarkedExpenses().length > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-lg"
+          >
+            <div className="mx-auto flex items-center justify-end gap-8">
+              <div className="text-gray-700">
+                There are currently {getUnmarkedExpenses().length} expenses waiting to be marked
+              </div>
+              <div className="flex items-center gap-4">
+                {isAutoMarking ? (
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 h-5">
+                      <div className="w-full h-full border-2 border-gray-300 border-t-gray-800 rounded-full animate-spin"></div>
+                    </div>
+                    <span className="text-gray-600">
+                      {autoMarkProgress.current}/{autoMarkProgress.total}
+                    </span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleAutoMark}
+                    className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                  >
+                    Auto-mark
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowExpenseNotification(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {rememberMapModal && (

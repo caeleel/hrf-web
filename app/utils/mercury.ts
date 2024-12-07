@@ -25,6 +25,7 @@ export async function fetchMercuryAPI(path: string, user: User, options: Request
 
 export interface MercuryTransaction {
   id: string;
+  accountId: string;
   counterpartyId: string;
   counterpartyName: string;
   amount: number;
@@ -59,7 +60,7 @@ async function getAccountId(accountNumber: string, user: User): Promise<string> 
   return accountId;
 }
 
-export async function getAccountTransactions(accountNumber: string, user: User, limit = 100): Promise<MercuryTransaction[]> {
+export async function getAccountTransactions(accountNumber: string, user: User): Promise<MercuryTransaction[]> {
   const accountId = await getAccountId(accountNumber, user);
-  return (await fetchMercuryAPI(`/account/${accountId}/transactions?limit=${limit}`, user)).transactions;
+  return (await fetchMercuryAPI(`/account/${accountId}/transactions?start=2024-09-01`, user)).transactions;
 } 

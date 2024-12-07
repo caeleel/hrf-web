@@ -1,11 +1,11 @@
 import { sql } from '@vercel/postgres';
 import { MercuryTransaction } from './mercury';
 
-if (!process.env.MERCURY_EXPENSE_ACCOUNT) {
+if (!process.env.MERCURY_EXPENSE_ACCOUNTS) {
   throw new Error('Mercury expense account not configured');
 }
 
-const EXPENSE_ACCOUNT = process.env.MERCURY_EXPENSE_ACCOUNT;
+const EXPENSE_ACCOUNTS = process.env.MERCURY_EXPENSE_ACCOUNTS;
 
 export async function getCounterpartyMap() {
   const result = await sql`
@@ -23,7 +23,7 @@ export async function autoMarkTransactions(transactions: MercuryTransaction[], c
     const userId = counterpartyMap[transaction.counterpartyId];
 
     // Skip if we don't have a mapping OR if it's the expense account
-    if (userId === undefined || transaction.counterpartyId === EXPENSE_ACCOUNT) {
+    if (userId === undefined || transaction.counterpartyId === EXPENSE_ACCOUNTS[0]) {
       continue;
     }
 

@@ -3,7 +3,7 @@
 import { TransactionList } from '../../components/TransactionList';
 
 export default function TransactionsPage() {
-  return <div className="h-full w-full flex py-6">
+  return <div className="h-full w-full flex py-5">
     <TransactionList />
   </div>;
 } 
