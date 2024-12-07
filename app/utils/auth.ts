@@ -2,7 +2,7 @@ import { sql } from '@vercel/postgres';
 import { cookies } from 'next/headers';
 import bcrypt from 'bcrypt';
 
-interface User {
+export interface User {
   id: number;
   username: string;
   password_hash: string;

@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "deploy": "node --loader ts-node/esm scripts/deploy.ts",
-    "deploy:prod": "node --loader ts-node/esm scripts/deploy.ts prod"
+    "deploy:prod": "node --loader ts-node/esm scripts/deploy.ts prod",
+    "migrate": "node --loader ts-node/esm scripts/run-migration.mts"
   },
   "dependencies": {
     "@types/bcrypt": "^5.0.2",
