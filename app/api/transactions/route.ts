@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const accountType = searchParams.get('account');
 
     // Get Mercury transactions
-    let mercuryTransactions = [];
+    const mercuryTransactions = [];
     if (accountType === 'income' || !accountType) {
       const incomeTransactions = await getAccountTransactions(INCOME_ACCOUNT, user);
       mercuryTransactions.push(...incomeTransactions);

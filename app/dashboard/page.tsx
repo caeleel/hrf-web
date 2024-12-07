@@ -18,27 +18,6 @@ interface CheckInMap {
   [date: string]: DailyCheckIns;
 }
 
-interface MarkedTransaction {
-  id: number;
-  transaction_id: string;
-  counterparty_name: string;
-  counterparty_id: string;
-  amount: number;
-  is_debit: boolean;
-  credited_user_id: number | null;
-  credited_username: string | null;
-  type: string;
-}
-
-interface MercuryTransaction {
-  id: string;
-  counterpartyId: string;
-  counterpartyName: string;
-  amount: number;
-  status: string;
-  postedAt: string;
-}
-
 export default function CalendarPage() {
   const [checkins, setCheckins] = useState<CheckInMap>({});
   const [selectedDate, setSelectedDate] = useState(new Date());

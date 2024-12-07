@@ -2,7 +2,7 @@ import type { User } from './auth';
 
 const MERCURY_BASE_URL = 'https://splendorlord.xyz';
 
-let accountIdCache: Record<string, string> = {};
+const accountIdCache: Record<string, string> = {};
 
 export async function fetchMercuryAPI(path: string, user: User, options: RequestInit = {}) {
   console.log(`Mercury API request by ${user.username}: ${path}`);
