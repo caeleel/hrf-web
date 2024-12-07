@@ -25,7 +25,7 @@ export async function GET() {
         type,
         posted_at
       FROM marked_transactions
-      WHERE type IN ('income', 'expense', 'distribution')
+      WHERE type IN ('income', 'expense', 'distribution', 'deposit')
       ORDER BY posted_at DESC
     `;
 

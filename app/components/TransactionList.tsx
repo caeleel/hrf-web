@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface MarkedTransaction {
@@ -12,7 +12,7 @@ export interface MarkedTransaction {
   credited_user_id: number | null;
   credited_username: string | null;
   type: string;
-  transaction_type: 'income' | 'expense' | 'internal';
+  transaction_type: string;
   is_internal: boolean;
   account_id: string;
   posted_at: string;
@@ -109,6 +109,54 @@ function AssignmentDropdown({
   );
 }
 
+function TypeDropdown({
+  transaction,
+  onTypeChange
+}: {
+  transaction: MarkedTransaction;
+  onTypeChange: (type: string) => Promise<void>;
+}) {
+  const [isChanging, setIsChanging] = useState(false);
+
+  const handleChange = async (value: string) => {
+    setIsChanging(true);
+    try {
+      await onTypeChange(value);
+    } finally {
+      setIsChanging(false);
+    }
+  };
+
+  const options = transaction.amount > 0
+    ? [
+      { label: 'Income', value: 'income' },
+      { label: 'Deposit', value: 'deposit' }
+    ]
+    : [
+      { label: 'Expense', value: 'expense' },
+      { label: 'Distribution', value: 'distribution' }
+    ];
+
+  return (
+    <select
+      value={transaction.transaction_type}
+      onChange={(e) => handleChange(e.target.value)}
+      disabled={isChanging || transaction.is_internal}
+      className={`block w-full py-1 bg-transparent outline-none capitalize ${transaction.is_internal ? 'text-gray-500' : ''}`}
+    >
+      {transaction.is_internal ? (
+        <option value="internal">Internal</option>
+      ) : (
+        options.map(option => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))
+      )}
+    </select>
+  );
+}
+
 export function LoadingSpinner() {
   return (
     <div className="flex w-full items-center justify-center py-12">
@@ -148,6 +196,7 @@ export function TransactionList() {
       }
       const data = await response.json();
       setTransactions(data.transactions);
+      setLoading(false);
 
       // Check for unassigned transactions
       const unassignedTransactions = data.transactions.filter((t: MarkedTransaction) => t.type === 'unassigned');
@@ -179,7 +228,7 @@ export function TransactionList() {
     // Optimistically update the UI
     setTransactions(prev => prev.map(t =>
       t.id === transaction.id
-        ? { ...t, credited_user_id: userId, credited_username: userId === 1 ? 'karl' : userId === 2 ? 'chang' : null }
+        ? { ...t, credited_user_id: userId, credited_username: userId === 1 ? 'karl' : userId === 2 ? 'chang' : null, type: transaction.transaction_type }
         : t
     ));
 
@@ -237,7 +286,6 @@ export function TransactionList() {
   };
 
   const getUnmarkedExpenses = () => {
-    console.log(transactions);
     return transactions.filter(t =>
       t.transaction_type === 'expense' && t.type === 'unassigned'
     );
@@ -259,6 +307,38 @@ export function TransactionList() {
     }
   };
 
+  const handleTypeChange = async (transaction: MarkedTransaction, newType: string) => {
+    // Optimistically update the UI
+    setTransactions(prev => prev.map(t =>
+      t.id === transaction.id
+        ? { ...t, transaction_type: newType }
+        : t
+    ));
+
+    try {
+      const response = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          transactionId: transaction.id,
+          creditedUserId: transaction.credited_user_id,
+          accountId: transaction.account_id,
+          type: newType
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update transaction type');
+      }
+    } catch (err) {
+      console.error('Error updating transaction type:', err);
+      // Revert optimistic update on error
+      await fetchTransactions();
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -270,10 +350,10 @@ export function TransactionList() {
   return (
     <div className="w-full">
       <div className="flex justify-end mb-1 mr-4">
-        <div className="px-2 py-1 border">
+        <div className="px-4 py-1 bg-gray-100 rounded-full">
           <select
             value={accountFilter}
-            className="outline-none bg-transparent"
+            className="outline-none bg-gray-100"
             onChange={(e) => setAccountFilter(e.target.value as typeof accountFilter)}
           >
             <option value="all">All Accounts</option>
@@ -296,23 +376,26 @@ export function TransactionList() {
           <div className="text-right">Credit to</div>
         </div>
         {transactions.map(transaction => (
-          <>
+          <Fragment key={transaction.id}>
             <div
-              key={transaction.id}
               className="hidden sm:grid grid-cols-[minmax(240px,1fr),120px,80px] lg:grid-cols-[minmax(300px,1fr),120px,100px,80px] gap-2 p-6 hover:bg-gray-50 transition-colors"
             >
               <div className="truncate">{transaction.counterparty_name}</div>
               <div className={`${transaction.is_debit ? 'text-red-500' : 'text-green-500'}`}>
                 ${Math.abs(transaction.amount).toFixed(2)}
               </div>
-              <div className="capitalize hidden lg:block">{transaction.transaction_type}</div>
+              <div className="hidden lg:block">
+                <TypeDropdown
+                  transaction={transaction}
+                  onTypeChange={(newType) => handleTypeChange(transaction, newType)}
+                />
+              </div>
               <AssignmentDropdown
                 transaction={transaction}
                 onAssign={(userId) => handleAssign(transaction, userId)}
               />
             </div>
             <div
-              key={`${transaction.id}-mobile`}
               className="sm:hidden flex items-center justify-between p-6"
             >
               <div>
@@ -326,7 +409,7 @@ export function TransactionList() {
                 onAssign={(userId) => handleAssign(transaction, userId)}
               />
             </div>
-          </>
+          </Fragment>
         ))}
       </div>
       <div className="w-full h-32" />

@@ -78,7 +78,7 @@ function formatAmount(amount: number, count?: number): string {
   const formattedAmount = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(Math.abs(amount));
+  }).format(amount);
 
   if (count !== undefined) {
     return `${formattedAmount} (${count} x 2,200)`;
@@ -118,6 +118,14 @@ function calculateCapitalAccounts(
       .filter(t => t.credited_user_id === 1)
       .reduce((sum, t) => sum + t.amount, 0);
 
+    const deposits = rangeTransactions.filter(t => t.type === 'deposit');
+    const changDeposits = deposits
+      .filter(t => t.credited_user_id === 2)
+      .reduce((sum, t) => sum + t.amount, 0);
+    const karlDeposits = deposits
+      .filter(t => t.credited_user_id === 1)
+      .reduce((sum, t) => sum + t.amount, 0);
+
     const expenses = rangeTransactions.filter(t => t.type === 'expense');
     let changExpenses = 0;
     let karlExpenses = 0;
@@ -141,49 +149,59 @@ function calculateCapitalAccounts(
       .filter(t => t.credited_user_id === 1)
       .reduce((sum, t) => sum + t.amount, 0);
 
-    // Skip if all values are 0
-    if (
-      changFigmaCount === 0 && karlFigmaCount === 0 &&
-      changNonFigma === 0 && karlNonFigma === 0 &&
-      changExpenses === 0 && karlExpenses === 0 &&
-      changDistributions === 0 && karlDistributions === 0
-    ) {
+    // Calculate totals
+    const changTotal = changFigmaAmount + Number(changNonFigma) + Number(changDeposits) - Number(changExpenses) - Number(changDistributions);
+    const karlTotal = karlFigmaAmount + Number(karlNonFigma) + Number(karlDeposits) - Number(karlExpenses) - Number(karlDistributions);
+    const categories: CategoryData[] = []
+    if (changFigmaAmount > 0 || karlFigmaAmount > 0) {
+      categories.push({
+        name: 'Figma Income',
+        chang: { amount: changFigmaAmount, count: changFigmaCount },
+        karl: { amount: karlFigmaAmount, count: karlFigmaCount }
+      });
+    }
+    if (changNonFigma > 0 || karlNonFigma > 0) {
+      categories.push({
+        name: 'Non-Figma Income',
+        chang: { amount: changNonFigma },
+        karl: { amount: karlNonFigma }
+      });
+    }
+    if (changDeposits > 0 || karlDeposits > 0) {
+      categories.push({
+        name: 'Deposits',
+        chang: { amount: changDeposits },
+        karl: { amount: karlDeposits }
+      });
+    }
+    if (changExpenses > 0 || karlExpenses > 0) {
+      categories.push({
+        name: 'Expenses',
+        chang: { amount: -changExpenses },
+        karl: { amount: -karlExpenses }
+      });
+    }
+    if (changDistributions > 0 || karlDistributions > 0) {
+      categories.push({
+        name: 'Distributions',
+        chang: { amount: -changDistributions },
+        karl: { amount: -karlDistributions }
+      });
+    }
+    if (changTotal !== 0 || karlTotal !== 0) {
+      categories.push({
+        name: 'Total',
+        chang: { amount: changTotal },
+        karl: { amount: karlTotal }
+      });
+    }
+    if (categories.length === 0) {
       return null;
     }
 
-    // Calculate totals
-    const changTotal = changFigmaAmount + Number(changNonFigma) - Number(changExpenses) - Number(changDistributions);
-    const karlTotal = karlFigmaAmount + Number(karlNonFigma) - Number(karlExpenses) - Number(karlDistributions);
-
     return {
       timePeriod: range.label,
-      categories: [
-        {
-          name: 'Figma Income',
-          chang: { amount: changFigmaAmount, count: changFigmaCount },
-          karl: { amount: karlFigmaAmount, count: karlFigmaCount }
-        },
-        {
-          name: 'Non-Figma Income',
-          chang: { amount: changNonFigma },
-          karl: { amount: karlNonFigma }
-        },
-        {
-          name: 'Expenses',
-          chang: { amount: -changExpenses },
-          karl: { amount: -karlExpenses }
-        },
-        {
-          name: 'Distributions',
-          chang: { amount: -changDistributions },
-          karl: { amount: -karlDistributions }
-        },
-        {
-          name: 'Total',
-          chang: { amount: changTotal },
-          karl: { amount: karlTotal }
-        }
-      ]
+      categories,
     };
   }).filter(period => period !== null) as TimePeriodData[];
 }
@@ -287,10 +305,10 @@ export function CapitalAccounts() {
   return (
     <div className="w-full sm:text-base text-xs relative min-h-full">
       <div className="flex justify-end mb-4 mr-4">
-        <div className="px-2 py-1 border">
+        <div className="px-4 py-1 bg-gray-100 rounded-full">
           <select
             value={granularity}
-            className="outline-none bg-transparent"
+            className="outline-none bg-gray-100"
             onChange={(e) => setGranularity(e.target.value as Granularity)}
           >
             <option value="monthly">Monthly</option>
