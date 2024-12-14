@@ -65,7 +65,7 @@ export async function GET(request: Request) {
       acc[mt.transaction_id] = mt;
       return acc;
     }, {});
-    mercuryTransactions = mercuryTransactions.filter(mt => mt.counterpartyId !== INCOME_ACCOUNT && mt.status !== 'failed');
+    mercuryTransactions = mercuryTransactions.filter(mt => mt.counterpartyId !== INCOME_ACCOUNT && mt.status !== 'failed' && !!mt.postedAt && mt.kind !== 'internalTransfer');
 
     // Combine Mercury transactions with marked data
     const combinedTransactions: MarkedTransaction[] = mercuryTransactions.map(mt => {
@@ -73,7 +73,7 @@ export async function GET(request: Request) {
         credited_user_id: null,
         credited_username: null,
         type: 'unassigned',
-        transaction_type: mt.accountId === INCOME_ACCOUNT && mt.counterpartyId === expenseAccounts[0] ? 'internal' : (mt.amount < 0 ? 'expense' : 'income')
+        transaction_type: mt.amount < 0 ? 'expense' : 'income',
       };
 
       return {

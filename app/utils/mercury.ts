@@ -29,6 +29,7 @@ export interface MercuryTransaction {
   counterpartyId: string;
   counterpartyName: string;
   amount: number;
+  kind: string;
   status: string;
   postedAt: string;
 }
