@@ -10,7 +10,7 @@ function HamburgerIcon({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+      className="lg:hidden p-2 bg-white hover:bg-gray-100 rounded-lg transition-colors"
     >
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -122,7 +122,7 @@ export function DashboardNavigation() {
       </nav>
 
       {/* Mobile Navigation Overlay */}
-      <div className="lg:hidden p-4 absolute">
+      <div className="lg:hidden p-4 absolute z-50">
         <HamburgerIcon onClick={() => setIsNavOpen(true)} />
       </div>
 

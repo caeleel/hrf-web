@@ -113,45 +113,46 @@ function calculateCapitalAccounts(
     const nonFigmaIncome = rangeTransactions.filter(t => t.type === 'income');
     const changNonFigma = nonFigmaIncome
       .filter(t => t.credited_user_id === 2)
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + Number(t.amount), 0);
     const karlNonFigma = nonFigmaIncome
       .filter(t => t.credited_user_id === 1)
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + Number(t.amount), 0);
 
     const deposits = rangeTransactions.filter(t => t.type === 'deposit');
     const changDeposits = deposits
       .filter(t => t.credited_user_id === 2)
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + Number(t.amount), 0);
     const karlDeposits = deposits
       .filter(t => t.credited_user_id === 1)
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + Number(t.amount), 0);
 
     const expenses = rangeTransactions.filter(t => t.type === 'expense');
+
     let changExpenses = 0;
     let karlExpenses = 0;
     expenses.forEach(e => {
       if (e.credited_user_id === 2) {
-        changExpenses += e.amount;
+        changExpenses += Number(e.amount);
       } else if (e.credited_user_id === 1) {
-        karlExpenses += e.amount;
+        karlExpenses += Number(e.amount);
       } else {
         // Split null user_id expenses 50/50
-        changExpenses += e.amount / 2;
-        karlExpenses += e.amount / 2;
+        changExpenses += Number(e.amount) / 2;
+        karlExpenses += Number(e.amount) / 2;
       }
     });
 
     const distributions = rangeTransactions.filter(t => t.type === 'distribution');
     const changDistributions = distributions
       .filter(t => t.credited_user_id === 2)
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + Number(t.amount), 0);
     const karlDistributions = distributions
       .filter(t => t.credited_user_id === 1)
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + Number(t.amount), 0);
 
     // Calculate totals
-    const changTotal = changFigmaAmount + Number(changNonFigma) + Number(changDeposits) - Number(changExpenses) - Number(changDistributions);
-    const karlTotal = karlFigmaAmount + Number(karlNonFigma) + Number(karlDeposits) - Number(karlExpenses) - Number(karlDistributions);
+    const changTotal = Number(changFigmaAmount) + Number(changNonFigma) + Number(changDeposits) - Number(changExpenses) - Number(changDistributions);
+    const karlTotal = Number(karlFigmaAmount) + Number(karlNonFigma) + Number(karlDeposits) - Number(karlExpenses) - Number(karlDistributions);
     const categories: CategoryData[] = []
     if (changFigmaAmount > 0 || karlFigmaAmount > 0) {
       categories.push({
@@ -212,8 +213,6 @@ export function CapitalAccounts() {
   const [error, setError] = useState('');
   const [rawData, setRawData] = useState<{ checkIns: CheckIn[], transactions: Transaction[] } | null>(null);
   const [capitalAccounts, setCapitalAccounts] = useState<TimePeriodData[]>([]);
-  const [showExpenseNotification, setShowExpenseNotification] = useState(true);
-  const [unmarkedExpenses, setUnmarkedExpenses] = useState<number>(0);
 
   // Fetch data only once when component mounts
   useEffect(() => {
@@ -228,54 +227,6 @@ export function CapitalAccounts() {
       setCapitalAccounts(accounts);
     }
   }, [granularity, rawData]);
-
-  useEffect(() => {
-    const checkUnmarkedExpenses = async () => {
-      try {
-        const response = await fetch('/api/transactions?account=expense');
-        if (!response.ok) throw new Error('Failed to fetch transactions');
-        const data = await response.json();
-
-        const count = data.transactions.filter(
-          (t: { transaction_type: string, type: string }) =>
-            t.transaction_type === 'expense' && t.type === 'unassigned'
-        ).length;
-
-        setUnmarkedExpenses(count);
-      } catch (err) {
-        console.error('Error checking unmarked expenses:', err);
-      }
-    };
-
-    checkUnmarkedExpenses();
-  }, []);
-
-  const handleAutoMark = async () => {
-    try {
-      const response = await fetch('/api/transactions/auto-mark', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) throw new Error('Failed to auto-mark transactions');
-
-      // Refresh unmarked expenses count
-      const transactionsResponse = await fetch('/api/transactions?account=expense');
-      if (!transactionsResponse.ok) throw new Error('Failed to fetch transactions');
-      const data = await transactionsResponse.json();
-
-      const count = data.transactions.filter(
-        (t: { transaction_type: string, type: string }) =>
-          t.transaction_type === 'expense' && t.type === 'unassigned'
-      ).length;
-
-      setUnmarkedExpenses(count);
-    } catch (err) {
-      console.error('Error auto-marking expenses:', err);
-    }
-  };
 
   const fetchData = async () => {
     try {
@@ -350,39 +301,6 @@ export function CapitalAccounts() {
           ))}
         </div>
       ))}
-
-      <AnimatePresence>
-        {showExpenseNotification && unmarkedExpenses > 0 && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-lg"
-          >
-            <div className="max-w-3xl mx-auto flex items-center justify-between">
-              <div className="text-gray-700">
-                There are currently {unmarkedExpenses} expenses waiting to be marked
-              </div>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={handleAutoMark}
-                  className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
-                >
-                  Auto-mark
-                </button>
-                <button
-                  onClick={() => setShowExpenseNotification(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 } 
