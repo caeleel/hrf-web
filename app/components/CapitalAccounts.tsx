@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, format } from 'date-fns';
 import { LoadingSpinner } from './TransactionList';
-import { motion, AnimatePresence } from 'framer-motion';
 
 type Granularity = 'monthly' | 'yearly' | 'all-time';
 
@@ -14,6 +13,8 @@ interface CheckIn {
 
 interface Transaction {
   amount: number;
+  account_number: string;
+  is_studio: boolean;
   credited_user_id: number | null;
   type: string;
   posted_at: string;
@@ -113,46 +114,62 @@ function calculateCapitalAccounts(
     const nonFigmaIncome = rangeTransactions.filter(t => t.type === 'income');
     const changNonFigma = nonFigmaIncome
       .filter(t => t.credited_user_id === 2)
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .reduce((sum, t) => sum + t.amount, 0);
     const karlNonFigma = nonFigmaIncome
       .filter(t => t.credited_user_id === 1)
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .reduce((sum, t) => sum + t.amount, 0);
 
     const deposits = rangeTransactions.filter(t => t.type === 'deposit');
     const changDeposits = deposits
       .filter(t => t.credited_user_id === 2)
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .reduce((sum, t) => sum + t.amount, 0);
     const karlDeposits = deposits
       .filter(t => t.credited_user_id === 1)
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .reduce((sum, t) => sum + t.amount, 0);
 
     const expenses = rangeTransactions.filter(t => t.type === 'expense');
 
-    let changExpenses = 0;
-    let karlExpenses = 0;
+    let changStudioExpenses = 0;
+    let karlStudioExpenses = 0;
+    let changeOtherExpenses = 0;
+    let karlOtherExpenses = 0;
     expenses.forEach(e => {
       if (e.credited_user_id === 2) {
-        changExpenses += Number(e.amount);
+        if (e.is_studio) {
+          changStudioExpenses += e.amount;
+        } else {
+          changeOtherExpenses += e.amount;
+        }
       } else if (e.credited_user_id === 1) {
-        karlExpenses += Number(e.amount);
+        if (e.is_studio) {
+          karlStudioExpenses += e.amount;
+        } else {
+          karlOtherExpenses += e.amount;
+        }
       } else {
-        // Split null user_id expenses 50/50
-        changExpenses += Number(e.amount) / 2;
-        karlExpenses += Number(e.amount) / 2;
+        if (e.is_studio) {
+          changStudioExpenses += e.amount / 2;
+          karlStudioExpenses += e.amount / 2;
+        } else {
+          changeOtherExpenses += e.amount / 2;
+          karlOtherExpenses += e.amount / 2;
+        }
       }
     });
 
     const distributions = rangeTransactions.filter(t => t.type === 'distribution');
     const changDistributions = distributions
       .filter(t => t.credited_user_id === 2)
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .reduce((sum, t) => sum + t.amount, 0);
     const karlDistributions = distributions
       .filter(t => t.credited_user_id === 1)
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .reduce((sum, t) => sum + t.amount, 0);
 
     // Calculate totals
-    const changTotal = Number(changFigmaAmount) + Number(changNonFigma) + Number(changDeposits) - Number(changExpenses) - Number(changDistributions);
-    const karlTotal = Number(karlFigmaAmount) + Number(karlNonFigma) + Number(karlDeposits) - Number(karlExpenses) - Number(karlDistributions);
+    const changTotal = changFigmaAmount + changNonFigma + changDeposits - changStudioExpenses - changeOtherExpenses - changDistributions;
+    const karlTotal = karlFigmaAmount + karlNonFigma + karlDeposits - karlStudioExpenses - karlOtherExpenses - karlDistributions;
+    const changeWithdrawable = changTotal + changStudioExpenses;
+    const karlWithdrawable = karlTotal + karlStudioExpenses;
     const categories: CategoryData[] = []
     if (changFigmaAmount > 0 || karlFigmaAmount > 0) {
       categories.push({
@@ -175,11 +192,18 @@ function calculateCapitalAccounts(
         karl: { amount: karlDeposits }
       });
     }
-    if (changExpenses > 0 || karlExpenses > 0) {
+    if (changStudioExpenses > 0 || karlStudioExpenses > 0) {
       categories.push({
-        name: 'Expenses',
-        chang: { amount: -changExpenses },
-        karl: { amount: -karlExpenses }
+        name: 'Studio Expenses',
+        chang: { amount: -changStudioExpenses },
+        karl: { amount: -karlStudioExpenses }
+      });
+    }
+    if (changeOtherExpenses > 0 || karlOtherExpenses > 0) {
+      categories.push({
+        name: 'Other Expenses',
+        chang: { amount: -changeOtherExpenses },
+        karl: { amount: -karlOtherExpenses }
       });
     }
     if (changDistributions > 0 || karlDistributions > 0) {
@@ -187,6 +211,13 @@ function calculateCapitalAccounts(
         name: 'Distributions',
         chang: { amount: -changDistributions },
         karl: { amount: -karlDistributions }
+      });
+    }
+    if (changeWithdrawable > 0 || karlWithdrawable > 0) {
+      categories.push({
+        name: 'LLC Capital',
+        chang: { amount: changeWithdrawable },
+        karl: { amount: karlWithdrawable }
       });
     }
     if (changTotal !== 0 || karlTotal !== 0) {
@@ -236,6 +267,9 @@ export function CapitalAccounts() {
       }
 
       const data = await response.json();
+      for (const transaction of data.transactions) {
+        transaction.amount = Number(transaction.amount);
+      }
       setRawData(data);
     } catch (err) {
       setError('Failed to load capital accounts');

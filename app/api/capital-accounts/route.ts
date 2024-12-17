@@ -2,6 +2,9 @@ import { sql } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/app/utils/auth';
 
+const EXPENSE_ACCOUNTS = process.env.MERCURY_EXPENSE_ACCOUNTS!;
+const STUDIO_ACCOUNT = EXPENSE_ACCOUNTS.split(',')[1]
+
 export async function GET() {
   try {
     const user = await getCurrentUser();
@@ -21,6 +24,7 @@ export async function GET() {
     const transactionsResult = await sql`
       SELECT 
         amount,
+        account_number,
         credited_user_id,
         type,
         posted_at
@@ -31,7 +35,12 @@ export async function GET() {
 
     return NextResponse.json({
       checkIns: checkInsResult.rows,
-      transactions: transactionsResult.rows
+      transactions: transactionsResult.rows.map((row) => {
+        return {
+          ...row,
+          is_studio: row.account_number === STUDIO_ACCOUNT
+        }
+      })
     });
   } catch (error) {
     console.error('Error fetching capital accounts data:', error);
