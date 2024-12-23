@@ -364,24 +364,35 @@ export function TransactionList() {
       </div>
 
       <div className="sm:text-base text-xs">
-        <div className="hidden sm:grid sm:grid-cols-[minmax(240px,1fr),120px,80px] lg:grid-cols-[minmax(300px,1fr),120px,100px,80px] gap-2 p-6 border-b font-semibold">
+        <div className="hidden sm:grid sm:grid-cols-[minmax(240px,1fr),120px,80px] lg:grid-cols-[minmax(300px,1fr),100px,120px,100px,80px] gap-2 p-6 border-b font-semibold">
           <div>From / To</div>
+          <div className="hidden lg:block">Category</div>
           <div>Amount</div>
           <div className="hidden lg:block">Type</div>
           <div className="pl-1 text-right">Credit to</div>
         </div>
         <div className="sm:hidden flex items-center justify-between p-6 border-b font-semibold">
-          <div><div>From / To</div>
-            <div>Amount</div></div>
+          <div>
+            <div>From / To</div>
+            <div>Amount</div>
+          </div>
           <div className="text-right">Credit to</div>
         </div>
         {transactions.map(transaction => (
           <Fragment key={transaction.id}>
             <div
-              className="hidden sm:grid grid-cols-[minmax(240px,1fr),120px,80px] lg:grid-cols-[minmax(300px,1fr),120px,100px,80px] gap-2 p-6 hover:bg-gray-50 transition-colors"
+              className="hidden sm:grid grid-cols-[minmax(240px,1fr),120px,80px] lg:grid-cols-[minmax(300px,1fr),100px,120px,100px,80px] gap-2 p-6 hover:bg-gray-50 transition-colors"
             >
-              <div className="truncate">{transaction.counterparty_name}</div>
-              <div className={`${transaction.is_debit ? 'text-red-500' : 'text-green-500'}`}>
+              <div className="truncate flex items-center gap-2">
+                {transaction.counterparty_name}
+                {transaction.transaction_type === 'expense' && transaction.type === 'unassigned' && (
+                  <span className="bg-red-100 text-red-800 text-[10px] px-2 rounded-full font-semibold">
+                    NEEDS REVIEW
+                  </span>
+                )}
+              </div>
+              <div className="hidden lg:block">{transaction.account_id === '202417010376' ? 'Studio' : 'LLC'}</div>
+              <div className={`${transaction.is_debit ? 'text-red-500' : 'text-black'}`}>
                 ${Math.abs(transaction.amount).toFixed(2)}
               </div>
               <div className="hidden lg:block">
@@ -400,7 +411,7 @@ export function TransactionList() {
             >
               <div>
                 <div className="truncate">{transaction.counterparty_name}</div>
-                <div className={`${transaction.is_debit ? 'text-red-500' : 'text-green-500'}`}>
+                <div className={`${transaction.is_debit ? 'text-red-500' : 'text-black'}`}>
                   ${Math.abs(transaction.amount).toFixed(2)}
                 </div>
               </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, format } from 'date-fns';
 import { LoadingSpinner } from './TransactionList';
+import { Distributions } from './Distributions';
 
 type Granularity = 'monthly' | 'yearly' | 'all-time';
 
@@ -35,6 +36,18 @@ interface CategoryData {
 interface TimePeriodData {
   timePeriod: string;
   categories: CategoryData[];
+}
+
+function getClientUsername(): 'karl' | 'chang' | null {
+  const cookies = document.cookie.split(';');
+  const userCookie = cookies.find(cookie => cookie.trim().startsWith('USER_DATA='));
+  if (!userCookie) return null;
+
+  const userData = decodeURIComponent(userCookie.split('=')[1]);
+  const usernameData = userData.split(';')[0];
+  const username = usernameData.split('=')[1];
+
+  return username as 'karl' | 'chang';
 }
 
 function getTimeRanges(granularity: Granularity): TimeRange[] {
@@ -287,6 +300,14 @@ export function CapitalAccounts() {
     return <div className="text-red-500 text-center py-4">{error}</div>;
   }
 
+  const currentUser = getClientUsername();
+  let currentUserCapital = 0;
+  const account = capitalAccounts.length > 0
+    ? capitalAccounts[capitalAccounts.length - 1].categories.find(c => c.name === 'LLC Capital') : null;
+  if (account && currentUser) {
+    currentUserCapital = account[currentUser].amount;
+  }
+
   return (
     <div className="w-full sm:text-base text-xs relative min-h-full">
       <div className="flex justify-end mb-4 mr-4">
@@ -335,6 +356,8 @@ export function CapitalAccounts() {
           ))}
         </div>
       ))}
+
+      <Distributions llcCapital={currentUserCapital} />
     </div>
   );
 } 

@@ -37,6 +37,13 @@ export interface MercuryTransaction {
 interface MercuryAccount {
   id: string;
   accountNumber: string;
+  name: string;
+  type: string;
+}
+
+interface MercuryRecipient {
+  id: string;
+  name: string;
 }
 
 async function getAccountId(accountNumber: string, user: User): Promise<string> {
@@ -64,4 +71,40 @@ async function getAccountId(accountNumber: string, user: User): Promise<string> 
 export async function getAccountTransactions(accountNumber: string, user: User): Promise<MercuryTransaction[]> {
   const accountId = await getAccountId(accountNumber, user);
   return (await fetchMercuryAPI(`/account/${accountId}/transactions?start=2024-09-01`, user)).transactions;
-} 
+}
+
+export async function getRecipients(user: User) {
+  const { recipients }: { recipients: MercuryRecipient[] } = await fetchMercuryAPI('/recipients', user);
+
+  return recipients.filter(recipient => recipient.name !== 'Bathing Culture PBC');
+}
+
+interface TransferParams {
+  recipientId: string;
+  amount: number;
+  idempotencyKey: string;
+  note?: string;
+}
+
+export async function transferFunds(fromAccountNumber: string, params: TransferParams, user: User) {
+  const { recipientId, amount, note, idempotencyKey } = params;
+  // Get account IDs
+  const fromAccountId = await getAccountId(fromAccountNumber, user);
+
+  return fetchMercuryAPI(`/account/${fromAccountId}/transactions`, user, {
+    method: 'POST',
+    body: JSON.stringify({
+      recipientId,
+      amount, // Convert to cents
+      note,
+      idempotencyKey,
+      paymentMethod: 'ach',
+    }),
+  });
+}
+
+export async function getAccountBalance(accountNumber: string, user: User) {
+  const accountId = await getAccountId(accountNumber, user);
+  const { availableBalance } = await fetchMercuryAPI(`/account/${accountId}`, user);
+  return availableBalance as number;
+}

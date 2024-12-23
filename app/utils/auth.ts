@@ -35,4 +35,4 @@ export async function getCurrentUser(): Promise<User | null> {
   if (!passwordMatch) return null;
 
   return user as User;
-} 
+}
