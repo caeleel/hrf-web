@@ -25,6 +25,7 @@ export default function CalendarPage() {
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState('');
   const router = useRouter();
+  const [isServer, setIsServer] = useState(true);
 
   useEffect(() => {
     // Check if user is logged in
@@ -41,6 +42,14 @@ export default function CalendarPage() {
       setCurrentUser(userData.username);
     }
   }, [router]);
+
+  useEffect(() => {
+    setIsServer(false)
+  }, [])
+
+  if (isServer) {
+    return null;
+  }
 
   const fetchCheckins = async (year: number, month: number) => {
     setIsFetching(true);
