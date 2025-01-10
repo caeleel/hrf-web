@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/app/utils/auth";
-import { transferFunds } from "@/app/utils/mercury";
+import { llcAccountId, transferFunds } from "@/app/utils/mercury";
 import { sql } from "@vercel/postgres";
-
-const ACCOUNT_NUMBER = process.env.MERCURY_INCOME_ACCOUNT!;
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -13,7 +11,7 @@ export async function POST(request: Request) {
 
   const { amount, recipientId, idempotencyKey } = await request.json();
 
-  const resp = await transferFunds(ACCOUNT_NUMBER, { recipientId, amount, idempotencyKey }, user);
+  const resp = await transferFunds(llcAccountId(), { recipientId, amount, idempotencyKey }, user);
 
   // mark a transaction in the db as type "distribution" credited to the current user
   await sql`
@@ -27,7 +25,7 @@ export async function POST(request: Request) {
         counterparty_id,
         counterparty_name
       ) VALUES (
-        ${ACCOUNT_NUMBER},
+        ${llcAccountId()},
         ${resp.id},
         ${resp.amount < 0},
         ${Math.abs(resp.amount)},

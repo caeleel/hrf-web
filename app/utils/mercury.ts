@@ -3,6 +3,9 @@ import type { User } from './auth';
 const MERCURY_BASE_URL = 'https://splendorlord.xyz';
 
 const accountIdCache: Record<string, string> = {};
+const EXPENSE_ACCOUNTS = process.env.MERCURY_EXPENSE_ACCOUNTS!;
+const LLC_ACCOUNT = EXPENSE_ACCOUNTS.split(',')[0];
+const STUDIO_ACCOUNT = EXPENSE_ACCOUNTS.split(',')[1];
 
 export async function fetchMercuryAPI(path: string, user: User, options: RequestInit = {}) {
   console.log(`Mercury API request by ${user.username}: ${path}`);
@@ -107,4 +110,12 @@ export async function getAccountBalance(accountNumber: string, user: User) {
   const accountId = await getAccountId(accountNumber, user);
   const { availableBalance } = await fetchMercuryAPI(`/account/${accountId}`, user);
   return availableBalance as number;
+}
+
+export function llcAccountId() {
+  return LLC_ACCOUNT
+}
+
+export function studioAccountId() {
+  return STUDIO_ACCOUNT
 }

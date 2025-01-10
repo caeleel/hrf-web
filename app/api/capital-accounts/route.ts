@@ -1,9 +1,7 @@
 import { sql } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/app/utils/auth';
-
-const EXPENSE_ACCOUNTS = process.env.MERCURY_EXPENSE_ACCOUNTS!;
-const STUDIO_ACCOUNT = EXPENSE_ACCOUNTS.split(',')[1]
+import { studioAccountId } from '@/app/utils/mercury';
 
 export async function GET() {
   try {
@@ -38,7 +36,7 @@ export async function GET() {
       transactions: transactionsResult.rows.map((row) => {
         return {
           ...row,
-          is_studio: row.account_number === STUDIO_ACCOUNT
+          is_studio: row.account_number === studioAccountId()
         }
       })
     });

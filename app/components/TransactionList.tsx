@@ -169,7 +169,6 @@ export function TransactionList() {
   const [transactions, setTransactions] = useState<MarkedTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [accountFilter, setAccountFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [rememberMapModal, setRememberMapModal] = useState<{
     show: boolean;
     transaction: MarkedTransaction;
@@ -181,16 +180,12 @@ export function TransactionList() {
 
   useEffect(() => {
     fetchTransactions();
-  }, [accountFilter]);
+  }, []);
 
   const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const url = accountFilter === 'all'
-        ? '/api/transactions'
-        : `/api/transactions?account=${accountFilter}`;
-
-      const response = await fetch(url);
+      const response = await fetch('/api/transactions');
       if (!response.ok) {
         throw new Error('Failed to fetch transactions');
       }
@@ -349,20 +344,6 @@ export function TransactionList() {
 
   return (
     <div className="w-full">
-      <div className="flex justify-end mb-1 mr-4">
-        <div className="px-4 py-1 bg-gray-100 rounded-full">
-          <select
-            value={accountFilter}
-            className="outline-none bg-gray-100"
-            onChange={(e) => setAccountFilter(e.target.value as typeof accountFilter)}
-          >
-            <option value="all">All Accounts</option>
-            <option value="income">Income Account</option>
-            <option value="expense">Expense Account</option>
-          </select>
-        </div>
-      </div>
-
       <div className="sm:text-base text-xs">
         <div className="hidden sm:grid sm:grid-cols-[minmax(240px,1fr),120px,80px] lg:grid-cols-[minmax(300px,1fr),100px,120px,100px,80px] gap-2 p-6 border-b font-semibold">
           <div>From / To</div>

@@ -15,7 +15,7 @@ interface ConfirmModalProps {
   onCancel: () => void;
 }
 
-function AmountWithLabel({ amount, label }: { amount: number, label: string }) {
+function AmountWithLabel({ amount, label, subtitle }: { amount: number, label: string, subtitle?: string }) {
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -24,6 +24,7 @@ function AmountWithLabel({ amount, label }: { amount: number, label: string }) {
       <div className="text-lg font-medium">
         ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </div>
+      {subtitle && <div className="text-xs text-gray-400">{subtitle}</div>}
     </div>
   )
 }
@@ -96,7 +97,7 @@ export function Distributions({ llcCapital }: { llcCapital: number }) {
     fetchData();
   }, []);
 
-  const maxDistribution = Math.min(bankBalance ?? 0, llcCapital);
+  const maxDistribution = Math.min(Math.max((bankBalance ?? 0) - 2500, 0), llcCapital);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,7 +161,7 @@ export function Distributions({ llcCapital }: { llcCapital: number }) {
         <form onSubmit={handleSubmit} className="space-y-6 max-w-md">
           <AmountWithLabel amount={bankBalance ?? 0} label="Bank balance" />
           <AmountWithLabel amount={llcCapital} label="Your LLC capital" />
-          <AmountWithLabel amount={maxDistribution} label="Maximum distribution" />
+          <AmountWithLabel amount={maxDistribution} label="Maximum distribution" subtitle="(Please keep at least $2500 in the account for expenses.)" />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

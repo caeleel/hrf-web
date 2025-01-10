@@ -11,36 +11,21 @@ if (!process.env.MERCURY_INCOME_ACCOUNT || !process.env.MERCURY_EXPENSE_ACCOUNTS
 const INCOME_ACCOUNT = process.env.MERCURY_INCOME_ACCOUNT;
 const EXPENSE_ACCOUNTS = process.env.MERCURY_EXPENSE_ACCOUNTS;
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const accountType = searchParams.get('account');
-
     const expenseAccounts = EXPENSE_ACCOUNTS.split(',');
 
     // Get Mercury transactions
     let mercuryTransactions: MercuryTransaction[] = [];
-    if (accountType === 'income' || !accountType) {
-      const incomeTransactions = await getAccountTransactions(INCOME_ACCOUNT, user);
-      mercuryTransactions.push(...(incomeTransactions.map((t) => ({ ...t, accountId: INCOME_ACCOUNT }))));
-    }
-    if (accountType === 'expense' || !accountType) {
-      for (const account of expenseAccounts) {
-        const expenseTransactions = await getAccountTransactions(account, user);
-        mercuryTransactions.push(...(expenseTransactions.map((t) => ({ ...t, accountId: account }))));
-      }
-    }
-    // Get marked transactions from database
-    let accountFilter = '';
-    if (accountType === 'income') {
-      accountFilter = `WHERE mt.account_number = '${INCOME_ACCOUNT}'`;
-    } else if (accountType === 'expense') {
-      accountFilter = `WHERE mt.account_number = '${expenseAccounts[0]}' OR mt.account_number = '${expenseAccounts[1]}'`;
+
+    for (const account of expenseAccounts) {
+      const expenseTransactions = await getAccountTransactions(account, user);
+      mercuryTransactions.push(...(expenseTransactions.map((t) => ({ ...t, accountId: account }))));
     }
 
     const query = `
@@ -54,7 +39,6 @@ export async function GET(request: Request) {
         END as is_internal
       FROM marked_transactions mt
       LEFT JOIN users u ON mt.credited_user_id = u.id
-      ${accountFilter}
     `;
 
     const result = await sql.query(query);
