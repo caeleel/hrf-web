@@ -77,6 +77,35 @@ function CheckInIndicator({ karlCheckedIn, changCheckedIn }: { karlCheckedIn: bo
   );
 }
 
+function CalendarDay({ day, karlCheckedIn, changCheckedIn, isSelected, isDisabled, isCurrent, onDateSelect }: {
+  day: Date;
+  karlCheckedIn: boolean;
+  changCheckedIn: boolean;
+  isSelected: boolean;
+  isDisabled: boolean;
+  isCurrent: boolean;
+  onDateSelect: (date: Date) => void;
+}) {
+  return (
+    <button
+      onClick={() => !isDisabled && onDateSelect(day)}
+      disabled={isDisabled}
+      className={`
+        relative h-12 lg:h-16 p-1 rounded-lg transition-colors flex items-center justify-center
+        ${isSelected ? 'bg-gray-100 dark:bg-gray-800' : ''}
+        ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800'}
+        ${!isCurrent && 'opacity-30'}
+      `}
+    >
+      <div className="text-sm">{format(day, 'd')}</div>
+      <CheckInIndicator
+        karlCheckedIn={karlCheckedIn}
+        changCheckedIn={changCheckedIn}
+      />
+    </button>
+  )
+}
+
 export function Calendar({ checkins, selectedDate, onDateSelect, onNavigate }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(selectedDate));
 
@@ -91,10 +120,14 @@ export function Calendar({ checkins, selectedDate, onDateSelect, onNavigate }: C
 
   // Calculate check-in counts once
   const changCount = Object.entries(checkins)
-    .filter(([date, day]) => startOfMonth(new Date(date)).getTime() === startOfMonth(currentMonth).getTime() && day.chang)
+    .filter(([date, day]) => {
+      return isSameMonth(new Date(`${date}T08:00:00.000Z`), currentMonth) && day.chang;
+    })
     .length;
   const karlCount = Object.entries(checkins)
-    .filter(([date, day]) => startOfMonth(new Date(date)).getTime() === startOfMonth(currentMonth).getTime() && day.karl)
+    .filter(([date, day]) => {
+      return isSameMonth(new Date(`${date}T08:00:00.000Z`), currentMonth) && day.karl;
+    })
     .length;
 
   // Generate all days that should appear in the calendar
@@ -176,31 +209,22 @@ export function Calendar({ checkins, selectedDate, onDateSelect, onNavigate }: C
             {day}
           </div>
         ))}
-        {days.map(day => {
+        {days.map((day, idx) => {
           const { karlCheckedIn, changCheckedIn } = getCheckInStatus(day);
           const isSelected = isSameDay(day, selectedDate);
           const isDisabled = isAfter(day, new Date());
           const isCurrent = isSameMonth(day, currentMonth);
 
-          return (
-            <button
-              key={day.toString()}
-              onClick={() => !isDisabled && onDateSelect(day)}
-              disabled={isDisabled}
-              className={`
-                relative h-12 lg:h-16 p-1 rounded-lg transition-colors flex items-center justify-center
-                ${isSelected ? 'bg-gray-100 dark:bg-gray-800' : ''}
-                ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800'}
-                ${!isCurrent && 'opacity-30'}
-              `}
-            >
-              <div className="text-sm">{format(day, 'd')}</div>
-              <CheckInIndicator
-                karlCheckedIn={karlCheckedIn}
-                changCheckedIn={changCheckedIn}
-              />
-            </button>
-          );
+          return <CalendarDay
+            key={idx}
+            day={day}
+            karlCheckedIn={karlCheckedIn}
+            changCheckedIn={changCheckedIn}
+            isSelected={isSelected}
+            isDisabled={isDisabled}
+            isCurrent={isCurrent}
+            onDateSelect={onDateSelect}
+          />
         })}
       </div>
     </div>

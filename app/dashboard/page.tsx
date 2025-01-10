@@ -20,7 +20,7 @@ interface CheckInMap {
 
 export default function CalendarPage() {
   const [checkins, setCheckins] = useState<CheckInMap>({});
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date(new Date().setHours(0, 0, 0, 0)));
   const [currentUser, setCurrentUser] = useState('');
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState('');
