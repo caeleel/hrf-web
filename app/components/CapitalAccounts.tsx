@@ -50,17 +50,21 @@ function getClientUsername(): 'karl' | 'chang' | null {
   return username as 'karl' | 'chang';
 }
 
+function recastToUTC(date: Date) {
+  return new Date(`${date.toLocaleString()} UTC`)
+}
+
 function getTimeRanges(granularity: Granularity): TimeRange[] {
   const now = new Date();
   const ranges: TimeRange[] = [];
 
   if (granularity === 'monthly') {
     let current = startOfMonth(now);
-    // Go back 12 months
-    for (let i = 0; i < 12; i++) {
+
+    for (let i = 0; i < 60; i++) {
       ranges.push({
-        start: startOfMonth(current),
-        end: endOfMonth(current),
+        start: recastToUTC(startOfMonth(current)),
+        end: recastToUTC(endOfMonth(current)),
         label: format(current, 'MMMM yyyy')
       });
       current = new Date(current.getFullYear(), current.getMonth() - 1);
@@ -70,8 +74,8 @@ function getTimeRanges(granularity: Granularity): TimeRange[] {
     // Go back 5 years
     for (let i = 0; i < 5; i++) {
       ranges.push({
-        start: startOfYear(current),
-        end: endOfYear(current),
+        start: recastToUTC(startOfYear(current)),
+        end: recastToUTC(endOfYear(current)),
         label: format(current, 'yyyy')
       });
       current = new Date(current.getFullYear() - 1, 0);
