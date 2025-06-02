@@ -31,8 +31,8 @@ export async function GET() {
     let incomeTransactions = await getAccountTransactions(INCOME_ACCOUNT, user);
     incomeTransactions = incomeTransactions.filter(t => t.counterpartyName.includes('STRIPE'));
     mercuryTransactions.push(...(incomeTransactions.map((t) => ({ ...t, accountId: INCOME_ACCOUNT }))));
-    const creditCardTransactions = await getAccountTransactionsWithId(CREDIT_CARD_ACCOUNT, user);
-    mercuryTransactions.push(...(creditCardTransactions.map((t) => ({ ...t, accountId: CREDIT_CARD_ACCOUNT }))));
+    const creditCardTransactions = await getAccountTransactionsWithId(CREDIT_CARD_ACCOUNT!, user);
+    mercuryTransactions.push(...(creditCardTransactions.map((t) => ({ ...t, accountId: CREDIT_CARD_ACCOUNT! }))));
     const query = `
       SELECT 
         mt.*,
