@@ -73,6 +73,10 @@ async function getAccountId(accountNumber: string, user: User): Promise<string> 
 
 export async function getAccountTransactions(accountNumber: string, user: User): Promise<MercuryTransaction[]> {
   const accountId = await getAccountId(accountNumber, user);
+  return getAccountTransactionsWithId(accountId, user);
+}
+
+export async function getAccountTransactionsWithId(accountId: string, user: User): Promise<MercuryTransaction[]> {
   return (await fetchMercuryAPI(`/account/${accountId}/transactions?start=2024-09-01`, user)).transactions;
 }
 

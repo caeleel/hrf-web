@@ -1,7 +1,7 @@
 import { sql } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/app/utils/auth';
-import { getAccountTransactions, MercuryTransaction } from '@/app/utils/mercury';
+import { getAccountTransactions, getAccountTransactionsWithId, MercuryTransaction } from '@/app/utils/mercury';
 import { MarkedTransaction } from '@/app/components/TransactionList';
 
 if (!process.env.MERCURY_INCOME_ACCOUNT || !process.env.MERCURY_EXPENSE_ACCOUNTS) {
@@ -10,6 +10,7 @@ if (!process.env.MERCURY_INCOME_ACCOUNT || !process.env.MERCURY_EXPENSE_ACCOUNTS
 
 const INCOME_ACCOUNT = process.env.MERCURY_INCOME_ACCOUNT;
 const EXPENSE_ACCOUNTS = process.env.MERCURY_EXPENSE_ACCOUNTS;
+const CREDIT_CARD_ACCOUNT = process.env.MERCURY_CREDIT_ACCOUNT;
 
 export async function GET() {
   try {
@@ -30,7 +31,8 @@ export async function GET() {
     let incomeTransactions = await getAccountTransactions(INCOME_ACCOUNT, user);
     incomeTransactions = incomeTransactions.filter(t => t.counterpartyName.includes('STRIPE'));
     mercuryTransactions.push(...(incomeTransactions.map((t) => ({ ...t, accountId: INCOME_ACCOUNT }))));
-
+    const creditCardTransactions = await getAccountTransactionsWithId(CREDIT_CARD_ACCOUNT, user);
+    mercuryTransactions.push(...(creditCardTransactions.map((t) => ({ ...t, accountId: CREDIT_CARD_ACCOUNT }))));
     const query = `
       SELECT 
         mt.*,
@@ -106,7 +108,7 @@ export async function POST(request: Request) {
     } = await request.json();
 
     // Get transaction details from Mercury
-    const transactions = await getAccountTransactions(accountId, user);
+    const transactions = accountId === CREDIT_CARD_ACCOUNT ? await getAccountTransactionsWithId(accountId, user) : await getAccountTransactions(accountId, user);
     const transaction = transactions.find(t => t.id === transactionId);
 
     if (!transaction) {

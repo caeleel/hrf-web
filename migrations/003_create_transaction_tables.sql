@@ -1,7 +1,7 @@
 -- Create marked_transactions table
 CREATE TABLE IF NOT EXISTS marked_transactions (
   id SERIAL PRIMARY KEY,
-  account_number VARCHAR(12) NOT NULL,
+  account_number VARCHAR(50) NOT NULL,
   transaction_id VARCHAR(255) NOT NULL UNIQUE,
   is_debit BOOLEAN NOT NULL,
   amount DECIMAL(10,2) NOT NULL,
