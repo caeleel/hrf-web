@@ -97,7 +97,7 @@ function AssignmentDropdown({
         value={transaction.credited_user_id || ''}
         onChange={(e) => handleChange(e.target.value)}
         disabled={isAssigning}
-        className="py-1 w-16 bg-transparent outline-none"
+        className="py-1 w-18 bg-transparent outline-none"
       >
         {options.map(option => (
           <option key={option.label} value={option.value || ''}>
