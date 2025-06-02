@@ -27,6 +27,9 @@ export async function GET() {
       const expenseTransactions = await getAccountTransactions(account, user);
       mercuryTransactions.push(...(expenseTransactions.map((t) => ({ ...t, accountId: account }))));
     }
+    let incomeTransactions = await getAccountTransactions(INCOME_ACCOUNT, user);
+    incomeTransactions = incomeTransactions.filter(t => t.counterpartyName.includes('STRIPE'));
+    mercuryTransactions.push(...(incomeTransactions.map((t) => ({ ...t, accountId: INCOME_ACCOUNT }))));
 
     const query = `
       SELECT 

@@ -344,8 +344,10 @@ export function TransactionList() {
 
   return (
     <div className="w-full">
+      <div className="lg:hidden h-12 w-full"/>
       <div className="sm:text-base text-xs">
-        <div className="hidden sm:grid sm:grid-cols-[minmax(240px,1fr),120px,80px] lg:grid-cols-[minmax(300px,1fr),100px,120px,100px,80px] gap-2 p-6 border-b font-semibold">
+        <div className="hidden sm:grid sm:grid-cols-[80px,minmax(240px,1fr),120px,80px] lg:grid-cols-[80px,minmax(300px,1fr),100px,120px,100px,80px] gap-2 p-6 border-b font-semibold">
+          <div>Date</div>
           <div>From / To</div>
           <div className="hidden lg:block">Category</div>
           <div>Amount</div>
@@ -354,6 +356,7 @@ export function TransactionList() {
         </div>
         <div className="sm:hidden flex items-center justify-between p-6 border-b font-semibold">
           <div>
+            <div>Date</div>
             <div>From / To</div>
             <div>Amount</div>
           </div>
@@ -362,8 +365,15 @@ export function TransactionList() {
         {transactions.map(transaction => (
           <Fragment key={transaction.id}>
             <div
-              className="hidden sm:grid grid-cols-[minmax(240px,1fr),120px,80px] lg:grid-cols-[minmax(300px,1fr),100px,120px,100px,80px] gap-2 p-6 hover:bg-gray-50 transition-colors"
+              className="hidden sm:grid grid-cols-[80px,minmax(240px,1fr),120px,80px] lg:grid-cols-[80px,minmax(300px,1fr),100px,120px,100px,80px] gap-2 p-6 hover:bg-gray-50 transition-colors"
             >
+              <div className="text-gray-600 items-center flex">
+                {new Date(transaction.posted_at).toLocaleDateString('en-US', {
+                  month: '2-digit',
+                  day: '2-digit',
+                  year: '2-digit'
+                })}
+              </div>
               <div className="truncate flex items-center gap-2">
                 {transaction.counterparty_name}
                 {transaction.transaction_type === 'expense' && transaction.type === 'unassigned' && (
@@ -391,6 +401,13 @@ export function TransactionList() {
               className="sm:hidden flex items-center justify-between p-6"
             >
               <div>
+                <div className="text-gray-600 items-center flex">
+                  {new Date(transaction.posted_at).toLocaleDateString('en-US', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: '2-digit'
+                  })}
+                </div>
                 <div className="truncate">{transaction.counterparty_name}</div>
                 <div className={`${transaction.is_debit ? 'text-red-500' : 'text-black'}`}>
                   ${Math.abs(transaction.amount).toFixed(2)}
