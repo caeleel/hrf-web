@@ -281,7 +281,7 @@ export function TransactionList() {
   };
 
   const needsReview = (transaction: MarkedTransaction) => {
-    return transaction.transaction_type === 'expense' && transaction.type === 'unassigned' && transaction.account_id !== '202417010376'
+    return transaction.transaction_type === 'expense' && transaction.type === 'unassigned'
   }
 
   const getUnmarkedExpenses = () => {
@@ -346,7 +346,7 @@ export function TransactionList() {
 
   return (
     <div className="w-full">
-      <div className="lg:hidden h-12 w-full"/>
+      <div className="lg:hidden h-12 w-full" />
       <div className="sm:text-base text-xs">
         <div className="hidden sm:grid sm:grid-cols-[80px,minmax(240px,1fr),120px,80px] lg:grid-cols-[80px,minmax(300px,1fr),100px,120px,100px,80px] gap-2 p-6 border-b font-semibold">
           <div>Date</div>
