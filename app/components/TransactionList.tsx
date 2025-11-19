@@ -280,10 +280,12 @@ export function TransactionList() {
     setRememberMapModal(null);
   };
 
+  const needsReview = (transaction: MarkedTransaction) => {
+    return transaction.transaction_type === 'expense' && transaction.type === 'unassigned' && transaction.account_id !== '202417010376'
+  }
+
   const getUnmarkedExpenses = () => {
-    return transactions.filter(t =>
-      t.transaction_type === 'expense' && t.type === 'unassigned'
-    );
+    return transactions.filter(needsReview);
   };
 
   const handleAutoMark = async () => {
@@ -376,7 +378,7 @@ export function TransactionList() {
               </div>
               <div className="truncate flex items-center gap-2">
                 {transaction.counterparty_name}
-                {transaction.transaction_type === 'expense' && transaction.type === 'unassigned' && (
+                {needsReview(transaction) && (
                   <span className="bg-red-100 text-red-800 text-[10px] px-2 rounded-full font-semibold">
                     NEEDS REVIEW
                   </span>
